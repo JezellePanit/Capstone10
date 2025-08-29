@@ -1,43 +1,39 @@
-import * as location from "expo-location";
-import { useEffect, useState } from 'react';
-import { StyleSheet } from 'react-native';
+import * as Location from "expo-location";
+import { useEffect, useState } from "react";
+import { StyleSheet } from "react-native";
 
-const uselocation = () => {
+const useLocation = () => {
   const [errorMsg, setErrorMsg] = useState("");
-  const [longitude, setLongitude] = useState("");
-  const [latitude, setLatitude] = useState("");
+  const [longitude, setLongitude] = useState(null);
+  const [latitude, setLatitude] = useState(null);
 
-  const getUSerLocation = async () => {
-    let {status} = await Location.requestForegroundPermissionsAsync();
-
-    if(status !== 'granted') {
-        setErrorMsg('Permission to location was not granted');
+  const getUserLocation = async () => {
+    try {
+      let { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== "granted") {
+        setErrorMsg("Permission to access location was not granted");
         return;
+      }
+
+      let { coords } = await Location.getCurrentPositionAsync({});
+      if (coords) {
+        console.log("Actual Device Location:", coords);
+        setLatitude(coords.latitude);
+        setLongitude(coords.longitude);
+      }
+    } catch (err) {
+      console.error("Error getting location:", err);
+      setErrorMsg("Failed to fetch location");
     }
-
-    let {coords} = await Location.getCurrentPositionAsync();
-
-    if (coords) {
-        const { latitude, longitude } = coords;
-        console.log("lat and long is", latitude, longitude);
-        setLatitude(latitude);
-        setLongitude(longitude);
-        let response = await location.reverseGeocodeAsync({
-            latitude,
-            longitude
-        })
-
-        console.log('USER LOCATION IS', response)
-    }
-  }
+  };
 
   useEffect(() => {
-    getUSerLocation();
-  }, [])
- 
-  return {latitude, longitude, errorMsg}
-}
+    getUserLocation();
+  }, []);
 
-export default uselocation
+  return { latitude, longitude, errorMsg };
+};
 
-const styles = StyleSheet.create({})
+export default useLocation;
+
+const styles = StyleSheet.create({});

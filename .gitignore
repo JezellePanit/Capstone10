@@ -1,0 +1,41 @@
+# Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
+
+# dependencies
+MyLead/node_modules/
+
+# Expo
+MyLead/.expo/
+MyLead/dist/
+MyLead/web-build/
+MyLead/expo-env.d.ts
+
+# Native
+MyLead/.kotlin/
+MyLead/*.orig.*
+MyLead/*.jks
+MyLead/*.p8
+MyLead/*.p12
+MyLead/*.key
+MyLead/*.mobileprovision
+
+# Metro
+MyLead/.metro-health-check*
+
+# debug
+MyLead/npm-debug.*
+MyLead/yarn-debug.*
+MyLead/yarn-error.*
+
+MyLead/.env
+
+# macOS
+MyLead/.DS_Store
+MyLead/*.pem
+
+# local env files
+#MyLead/.env*.local
+
+# typescript
+MyLead/*.tsbuildinfo
+
+MyLead/app-example

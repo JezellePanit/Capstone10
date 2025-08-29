@@ -13,62 +13,41 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors } from '../../../constants/Color';
 
+// Local restaurant dataset
+const restaurantData = [
+  {
+    name: 'Halal Bites',
+    description: 'Delicious Halal food served fresh.',
+    availability: 'Mon–Fri, 7am–4pm',
+    image: require('./../../../assets/images/1789.jpg'),
+    coords: { latitude: 16.4023, longitude: 120.5960 },
+  },
+  {
+    name: 'Muslim Eats',
+    description: 'Authentic Muslim cuisine.',
+    availability: 'Working Hours',
+    image: require('./../../../assets/images/1789.jpg'),
+    coords: { latitude: 16.4030, longitude: 120.5980 },
+  },
+  {
+    name: 'Halal Bites 2',
+    description: 'Tasty meals for everyone.',
+    availability: 'Working Hours',
+    image: require('./../../../assets/images/1789.jpg'),
+    coords: { latitude: 16.4040, longitude: 120.6005 },
+  },
+  {
+    name: 'Muslim Eats 2',
+    description: 'Freshly made traditional dishes.',
+    availability: 'Working Hours',
+    image: require('./../../../assets/images/1789.jpg'),
+    coords: { latitude: 16.4055, longitude: 120.6022 },
+  },
+];
+
 export default function Restaurant() {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
-
-  // 👉 Geoapify API Key
-  const GEOAPIFY_API_KEY = 'ef7d5028843c49fd963b2dad2c3fd8d4';
-
-  // ✅ Get user's current location
-  const getUserLocation = async () => {
-    const { status } = await Location.requestForegroundPermissionsAsync();
-    if (status !== 'granted') {
-      alert('Permission to access location was denied');
-      return null;
-    }
-
-    const location = await Location.getCurrentPositionAsync({});
-    return {
-      lat: location.coords.latitude,
-      lon: location.coords.longitude,
-    };
-  };
-
-  // ✅ Fetch walking directions from Geoapify
-  const getDirections = async (from, to) => {
-    const url = `https://api.geoapify.com/v1/routing?waypoints=${from.lat},${from.lon}|${to.lat},${to.lon}&mode=walk&apiKey=${GEOAPIFY_API_KEY}`;
-    const res = await fetch(url);
-    const data = await res.json();
-    return data;
-  };
-
-  const restaurantData = [
-    {
-      name: 'Halal Bites',
-      description: 'Delicious Halal food served fresh.',
-      availability: 'Mon–Fri, 7am–4pm',
-      image: require('./../../../assets/images/1789.jpg'),
-    },
-    {
-      name: 'Muslim Eats',
-      description: 'Authentic Muslim cuisine.',
-      availability: 'Working Hours',
-      image: require('./../../../assets/images/1789.jpg'),
-    },
-    {
-      name: 'Halal Bites 2',
-      description: 'Tasty meals for everyone.',
-      availability: 'Working Hours',
-      image: require('./../../../assets/images/1789.jpg'),
-    },
-    {
-      name: 'Muslim Eats 2',
-      description: 'Freshly made traditional dishes.',
-      availability: 'Working Hours',
-      image: require('./../../../assets/images/1789.jpg'),
-    },
-  ];
 
   // ✅ Filter the list based on search
   const filteredRestaurant = restaurantData.filter((item) => {
@@ -79,7 +58,6 @@ export default function Restaurant() {
       item.availability.toLowerCase().includes(query)
     );
   });
-
 
   return (
     <SafeAreaView style={styles.container}>
@@ -125,7 +103,7 @@ export default function Restaurant() {
 
               {/* Button Group */}
               <View style={styles.iconGroup}>
-                {/* Info button */}
+                {/* Menu button */}
                 <TouchableOpacity
                   style={styles.menuButton}
                   onPress={() =>
@@ -140,7 +118,7 @@ export default function Restaurant() {
                   }
                 >
                   <Ionicons name="fast-food" size={20} color={Colors.font2} />
-                  <Text style={{ color: Colors.font2, marginLeft: 4 }}> Menu </Text>
+                  <Text style={styles.buttonText}>Menu</Text>
                 </TouchableOpacity>
 
                 {/* Navigate button */}
@@ -151,6 +129,8 @@ export default function Restaurant() {
                       pathname: '../../navestablishment/restaurantlocation',
                       params: {
                         name: item.name,
+                        latitude: item.coords.latitude,
+                        longitude: item.coords.longitude,
                         description: item.description,
                         image: Image.resolveAssetSource(item.image).uri,
                       },
@@ -158,7 +138,7 @@ export default function Restaurant() {
                   }
                 >
                   <Ionicons name="location-sharp" size={20} color={Colors.font2} />
-                  <Text style={{ color: Colors.font2, marginLeft: 4 }}> Navigate </Text>
+                  <Text style={styles.buttonText}>Navigate</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -173,13 +153,8 @@ export default function Restaurant() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: Colors.font2,
-  },
-  header: {
-    backgroundColor: Colors.primary,
-  },
+  container: { flex: 1, backgroundColor: Colors.font2 },
+  header: { backgroundColor: Colors.primary },
   header_text: {
     fontFamily: 'poppins-bold',
     textAlign: 'center',
@@ -187,11 +162,7 @@ const styles = StyleSheet.create({
     color: Colors.font2,
     padding: 13,
   },
-  backIcon: {
-    position: 'absolute',
-    left: 20,
-    top: 18,
-  },
+  backIcon: { position: 'absolute', left: 20, top: 18 },
   searchContainer: {
     flexDirection: 'row',
     backgroundColor: '#f1f1f1',
@@ -200,17 +171,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 15,
   },
-  searchInput: {
-    flex: 1,
-    height: 40,
-  },
-  searchIcon: {
-    marginLeft: 10,
-  },
-  listContainer: {
-    paddingHorizontal: 15,
-    paddingBottom: 100,
-  },
+  searchInput: { flex: 1, height: 40 },
+  searchIcon: { marginLeft: 10 },
+  listContainer: { paddingHorizontal: 15, paddingBottom: 100 },
   card: {
     backgroundColor: '#fff',
     marginBottom: 15,
@@ -219,35 +182,17 @@ const styles = StyleSheet.create({
     elevation: 3,
     padding: 10,
   },
-  image: {
-    width: '100%',
-    height: 190,
-    borderRadius: 10,
-  },
+  image: { width: '100%', height: 190, borderRadius: 10 },
   titleRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     marginTop: 10,
   },
-  title: {
-    fontWeight: 'bold',
-    fontSize: 16,
-    flexShrink: 1,
-  },
-  desc: {
-    fontSize: 12,
-    color: '#666',
-    marginVertical: 5,
-  },
-  hours: {
-    fontSize: 12,
-    color: '#666',
-  },
-  iconGroup: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
+  title: { fontWeight: 'bold', fontSize: 16, flexShrink: 1 },
+  desc: { fontSize: 12, color: '#666', marginVertical: 5 },
+  hours: { fontSize: 12, color: '#666' },
+  iconGroup: { flexDirection: 'row', alignItems: 'center' },
   menuButton: {
     flexDirection: 'row',
     backgroundColor: Colors.secondary,
@@ -265,4 +210,5 @@ const styles = StyleSheet.create({
     paddingVertical: 3,
     alignItems: 'center',
   },
+  buttonText: { color: Colors.font2, marginLeft: 4 },
 });
