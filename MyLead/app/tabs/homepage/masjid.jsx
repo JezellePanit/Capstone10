@@ -1,7 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
-import * as Location from 'expo-location';   // ✅ FIXED: Added import
 import {
   Image,
   ScrollView,
@@ -18,57 +17,59 @@ export default function Masjid() {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
 
-  // 👉 Geoapify API Key
-  const GEOAPIFY_API_KEY = 'ef7d5028843c49fd963b2dad2c3fd8d4';
-
-  // ✅ Get user's current location
-  const getUserLocation = async () => {
-    const { status } = await Location.requestForegroundPermissionsAsync();
-    if (status !== 'granted') {
-      alert('Permission to access location was denied');
-      return null;
-    }
-
-    const location = await Location.getCurrentPositionAsync({});
-    return {
-      lat: location.coords.latitude,
-      lon: location.coords.longitude,
-    };
-  };
-
-  // ✅ Fetch walking directions from Geoapify
-  const getDirections = async (from, to) => {
-    const url = `https://api.geoapify.com/v1/routing?waypoints=${from.lat},${from.lon}|${to.lat},${to.lon}&mode=walk&apiKey=${GEOAPIFY_API_KEY}`;
-    const res = await fetch(url);
-    const data = await res.json();
-    return data;
-  };
-
   // 👉 Static mosque list
   const masjidData = [
     {
-      name: 'Mosque 1',
-      description: 'Baguio City',
+      name: 'Baguio Grand Mosque',
+      about: 'First ever church in tahfckmscka',
+      prayer: 'monday 10-2 and friday 5-7pm',
+      imam: 'Brother Jose',
+      address: 'CH8Q+774, Sepic Rd, Baguio, Benguet',
       availability: 'Open 5AM - 9PM',
-      image: require('../../../assets/images/1789.jpg'),
+      number: '+63 983 825 8637',
+      email: 'info@grandmosque.com',
+      socials: 'facebook.com',
+      image: require('../../../assets/images/mosque1.webp'),
+      coords: { lat: 16.4156, lon: 120.5882 },
     },
     {
-      name: 'Mosque 2',
-      description: 'La Trinidad',
+      name: 'Ahmad Brothers Mosque',
+      about: 'First ever church in tahfckmscka',
+      prayer: 'monday 10-2 and friday 5-7pm',
+      imam: 'Brother Jose',
+      address: '004-b purok 1 New Lucban Rd, Baguio, Benguet',
       availability: 'Open 6AM - 8PM',
-      image: require('../../../assets/images/1789.jpg'),
+      number: '+63 954 964 1425',
+      email: 'info@ahmadbrothers.com',
+      socials: 'facebook.com',
+      image: require('../../../assets/images/restaurant3.webp'),
+      coords: { lat: 16.4258, lon: 120.5942 },
     },
     {
-      name: 'Mosque 3',
-      description: 'Benguet',
+      name: 'Masjid muhajjarrin',
+      about: 'First ever church in tahfckmscka',
+      prayer: 'monday 10-2 and friday 5-7pm',
+      imam: 'Brother Jose',
+      address: 'Lower Rock Quarry, Baguio, Benguet',
       availability: '24/7',
-      image: require('../../../assets/images/1789.jpg'),
+      number: '+63 956 957 2346',
+      email: 'info@muhajjarin.com',
+      socials: 'facebook.com',
+      image: require('../../../assets/images/mosque3.webp'),
+      coords: { lat: 16.4279, lon: 120.5854 },
     },
     {
-      name: 'Mosque 4',
-      description: 'Pangasinan',
+      name: 'Masjid Addabl',
+      about: 'First ever church in tahfckmscka',
+      prayer: 'monday 10-2 and friday 5-7pm',
+      imam: 'Brother Jose',
+      address: '9HXM+8Q6, Baguio, Benguet',
       availability: 'Closed on Fridays',
-      image: require('../../../assets/images/1789.jpg'),
+      number: '+63 963 274 5723',
+      email: 'info@addabl.com',
+      socials: 'facebook.com',
+      image: require('../../../assets/images/mosque4.webp'),
+      coords: { lat: 16.3983, lon: 120.5844 },
     },
   ];
 
@@ -84,11 +85,10 @@ export default function Masjid() {
 
   return (
     <SafeAreaView style={styles.container}>
-
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.header_text}>Mosque</Text>    
-        <TouchableOpacity style={styles.backIcon} onPress={() => router.back()}>
+        <Text style={styles.header_text}>Mosque</Text>
+        <TouchableOpacity style={styles.backIcon} onPress={() => router.push('tabs/homepage/home')}>
           <Ionicons name="chevron-back" size={24} color={Colors.font2} />
         </TouchableOpacity>
       </View>
@@ -113,7 +113,7 @@ export default function Masjid() {
               style={styles.card}
               onPress={() =>
                 router.push({
-                  pathname: 'tabs/homepage/masjiddetails',
+                  pathname: 'details/masjid/masjiddetails',
                   params: {
                     ...item,
                     image: Image.resolveAssetSource(item.image).uri,
@@ -125,54 +125,10 @@ export default function Masjid() {
 
               <View style={styles.titleRow}>
                 <Text style={styles.title}>{item.name}</Text>
-                <View style={styles.iconGroup}>
-                  {/* Navigate Button */}
-                  <TouchableOpacity
-                    style={{
-                      backgroundColor: Colors.secondary,
-                      width: 100,
-                      borderRadius: 10,
-                      padding: 3,
-                    }}
-                    onPress={async () => {
-                      console.log('Locate icon pressed');
-                      const userLocation = await getUserLocation();
-                      if (!userLocation) return;
-
-                      const mosqueLocation = {
-                        lat: 16.409044,  // You can make this dynamic if needed
-                        lon: 120.600258,
-                      };
-
-                      const directions = await getDirections(userLocation, mosqueLocation);
-                      console.log('Fetched directions:', directions);
-
-                      if (!directions || !directions.features || directions.features.length === 0) {
-                        alert('No directions found.');
-                        return;
-                      }
-
-                      // Navigate to map view and pass parameters
-                      router.push({
-                        pathname: '../../navestablishment/locatemosque',
-                        params: {
-                          from: JSON.stringify(userLocation),
-                          to: JSON.stringify(mosqueLocation),
-                          route: JSON.stringify(directions),
-                        },
-                      });
-                    }}
-                  >
-                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
-                      <Ionicons name="location-sharp" size={20} color={Colors.font2} />
-                      <Text style={{ color: Colors.font2, marginLeft: 4 }}> Navigate </Text>
-                    </View>
-                  </TouchableOpacity>
-                </View>
               </View>
 
               {/* Information */}
-              <Text style={styles.desc}>{item.description}</Text>
+              <Text style={styles.desc}>{item.address}</Text>
               <Text style={styles.hours}>{item.availability}</Text>
             </TouchableOpacity>
           ))
@@ -258,9 +214,5 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginTop: 10,
     flex: 1,
-  },
-  iconGroup: {
-    flexDirection: 'row',
-    alignItems: 'center',
   },
 });

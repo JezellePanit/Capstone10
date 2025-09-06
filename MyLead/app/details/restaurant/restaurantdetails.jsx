@@ -11,23 +11,21 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Swiper from 'react-native-swiper';
-import { Colors } from './../../../constants/Color';
+import { Colors } from '../../../constants/Color';
 
 const { width } = Dimensions.get('window');
 
-export default function EducationDetails() {
+export default function RestaurantDetails() {
   const router = useRouter();
-  const { name, description, image, availability } = useLocalSearchParams();
+  const { name, about, representative, address, image, availability } = useLocalSearchParams();
 
-  // Convert `image` param (CSV or single string) into an array
-  const imageArray = image
-    ? image.split(',').map((img) => img.trim())
-    : [];
+  // Handle single/multiple image params
+  const imageArray = image ? image.split(',').map((img) => img.trim()) : [];
 
-  // Final array = [dynamic images from params] + [default fallback images]
+  // Final image array (you can remove defaults later if not needed)
   const finalImages = [
     ...imageArray,
-    require('./../../../assets/images/Education.jpg'),
+    require('./../../../assets/images/MuslimRestaurant.jpg'),
     require('./../../../assets/images/1789.jpg'),
   ];
 
@@ -35,14 +33,23 @@ export default function EducationDetails() {
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>{name}</Text>
-        <TouchableOpacity onPress={() => router.back()}>
+        <Text
+          style={styles.headerTitle}
+          numberOfLines={1}
+          ellipsizeMode="tail"
+        >
+          {name
+            ? name.split(' ').slice(0, 2).join(' ') +
+              (name.split(' ').length > 2 ? '...' : '')
+            : ''}
+        </Text>
+        <TouchableOpacity onPress={() => router.push('tabs/homepage/restaurant')} style={styles.backBtn}>
           <Ionicons name="chevron-back" size={24} color="#fff" />
         </TouchableOpacity>
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        {/* Education Image Carousel */}
+        {/* Image Carousel */}
         <View style={styles.profileContainer}>
           <Swiper
             style={styles.wrapper}
@@ -71,9 +78,7 @@ export default function EducationDetails() {
                 }}
               />
             }
-            paginationStyle={{
-              bottom: 5,
-            }}
+            paginationStyle={{ bottom: 5 }}
           >
             {finalImages.map((img, index) => (
               <Image
@@ -86,36 +91,33 @@ export default function EducationDetails() {
           </Swiper>
         </View>
 
-        {/* Info Section */}
+        {/* Title */}
         <View style={styles.infoTitleContainer}>
           <Text style={styles.infoTitleText}>{name}</Text>
         </View>
 
+        {/* About */}
         <View style={styles.infoAssets}>
-          <Text style={styles.label}>About:</Text>
-          <Text style={styles.value}>{description}</Text>
+          <Text style={styles.sectionTitle}>About</Text>
+          <Text style={styles.value}>{about}</Text>
         </View>
 
+        {/* Representative */}
         <View style={styles.infoAssets}>
-          <Text style={styles.label}>Availability:</Text>
-          <Text style={styles.value}>
-            {availability ? availability : 'No schedule provided'}
-          </Text>
+          <Text style={styles.sectionTitle}>Representative</Text>
+          <Text style={styles.value}>{representative ? representative : 'Not specified'}</Text>
         </View>
 
+        {/* Address */}
         <View style={styles.infoAssets}>
-          <Text style={styles.label}>Phone:</Text>
-          <Text style={styles.value}>[Contact Number +63]</Text>
+          <Text style={styles.sectionTitle}>Address</Text>
+          <Text style={styles.value}>{address}</Text>
         </View>
 
+        {/* Availability */}
         <View style={styles.infoAssets}>
-          <Text style={styles.label}>Email:</Text>
-          <Text style={styles.value}>[Email Address]</Text>
-        </View>
-
-        <View style={styles.infoAssets}>
-          <Text style={styles.label}>Social Media:</Text>
-          <Text style={styles.value}>[Icons]</Text>
+          <Text style={styles.sectionTitle}>Opening Hours</Text>
+          <Text style={styles.value}>{availability ? availability : 'Not specified'}</Text>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -126,20 +128,18 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#fff' },
   header: {
     backgroundColor: Colors.primary,
-    paddingTop: 25,
-    paddingBottom: 15,
-    paddingHorizontal: 20,
-    flexDirection: 'row',
-    alignItems: 'center',
+  },
+  backBtn: {
+    position: 'absolute',
+    left: 20,
+    top: 18,
   },
   headerTitle: {
-    color: '#fff',
-    fontSize: 18,
-    textAlign: 'center',
     fontFamily: 'poppins-bold',
-    position: 'absolute',
-    left: 0,
-    right: 0,
+    textAlign: 'center',
+    fontSize: 22,
+    color: Colors.font2,
+    padding: 13,
   },
   scrollContent: { padding: 15 },
   profileContainer: {
@@ -156,22 +156,7 @@ const styles = StyleSheet.create({
     borderColor: '#ccc',
     alignSelf: 'center',
   },
-  infoAssets: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    backgroundColor: Colors.primary_base,
-    padding: 15,
-    borderRadius: 12,
-    marginBottom: 10,
-    marginTop: 10,
-    shadowColor: '#0000',
-    shadowOpacity: 0.05,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 5,
-    elevation: 2,
-  },
   infoTitleContainer: {
-    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 15,
@@ -181,16 +166,21 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: 'bold',
   },
-  label: {
+  infoAssets: {
+    backgroundColor: '#DBFCF0',
+    padding: 15,
+    borderRadius: 12,
+    marginBottom: 10,
+    marginTop: 10,
+  },
+  sectionTitle: {
     fontWeight: 'bold',
-    fontSize: 14,
+    fontSize: 16,
     color: '#333',
+    marginBottom: 8,
   },
   value: {
     fontSize: 14,
     color: '#444',
-    flexShrink: 1,
-    textAlign: 'right',
-    marginLeft: 10,
   },
 });

@@ -1,10 +1,13 @@
-import { MaterialIcons, Feather } from '@expo/vector-icons';
-import { Tabs, } from 'expo-router';
+import { MaterialIcons, Entypo, Ionicons, Feather, FontAwesome6 } from '@expo/vector-icons';
+import { Tabs, useLocalSearchParams } from 'expo-router';
 import { Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Colors } from '../../constants/Color';
+import { Colors } from '../../../constants/Color';
 
-export default function TabLayout() {
+export default function _layout() {
+
+  const params = useLocalSearchParams();
+
   return (
   <SafeAreaView style={{flex:1, backgroundColor: Colors.font2}} edges={['bottom']}>
     <Tabs screenOptions={{ headerShown: false, tabBarShowLabel: false,
@@ -25,14 +28,15 @@ export default function TabLayout() {
     }}
     >
         
-    {/* Home Tab */}
+    {/* Details */}
     <Tabs.Screen
-      name="homepage"
+      name="educationdetails"
+      initialParams={params}
       options={{
         tabBarIcon: ({ focused }) => (
           <View style={{alignItems: 'center', width: 100}}>
-            <Feather name="home" size={24} color={focused ? Colors.font1: Colors.font2} />
-            <Text style={{fontSize: 12, color: focused ? Colors.font1: Colors.font2,}}> Home </Text>
+            <Ionicons name="information-circle-outline" size={24} color={focused ? Colors.font1: Colors.font2} />
+            <Text style={{fontSize: 12, color: focused ? Colors.font1: Colors.font2,}}> Info </Text>
           </View>
         ),
       }}
@@ -40,12 +44,13 @@ export default function TabLayout() {
 
     {/* Locate */}
     <Tabs.Screen
-      name="locationpage"
+      name="educationlocation"
+      initialParams={params}
       options={{
         tabBarIcon: ({ focused }) => (
           <View style={{alignItems: 'center', width: 100}}>
-            <MaterialIcons name="travel-explore" size={24} color={focused ? Colors.font1 : Colors.font2} />
-            <Text style={{fontSize: 12, color: focused ? Colors.font1: Colors.font2,}}> Explore </Text>
+            <Ionicons name="location-sharp" size={24} color={focused ? Colors.font1 : Colors.font2} />
+            <Text style={{fontSize: 12, color: focused ? Colors.font1: Colors.font2,}}> Location </Text>
           </View>
         ),
       }}
@@ -53,17 +58,17 @@ export default function TabLayout() {
 
     {/* Menu */}
     <Tabs.Screen
-      name="menupage"
+      name="contact"
+      initialParams={params}
       options={{
         tabBarIcon: ({ focused }) => (
           <View style={{alignItems: 'center', width: 100}}>
-            <Feather name="menu" size={24} color={focused ? Colors.font1: Colors.font2} />
-            <Text style={{fontSize: 12, color: focused ? Colors.font1: Colors.font2,}}> Menu </Text>
+            <FontAwesome6 name="contact-book" size={24} color={focused ? Colors.font1: Colors.font2} />
+            <Text style={{fontSize: 12, color: focused ? Colors.font1: Colors.font2,}}> Contact Us </Text>
           </View>
         ),
       }}
     />
-
     </Tabs>
   </SafeAreaView>
   );

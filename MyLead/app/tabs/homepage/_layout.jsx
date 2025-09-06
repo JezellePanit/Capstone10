@@ -7,7 +7,6 @@ export default function HomeLayout() {
       <Stack.Screen name="education" />
       <Stack.Screen name="masjid" />
       <Stack.Screen name="restaurant" />
-      <Stack.Screen name="restaurantmenu" />
     </Stack>
   );
 }

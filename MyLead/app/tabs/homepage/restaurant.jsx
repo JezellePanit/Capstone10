@@ -13,41 +13,64 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors } from '../../../constants/Color';
 
-// Local restaurant dataset
-const restaurantData = [
-  {
-    name: 'Halal Bites',
-    description: 'Delicious Halal food served fresh.',
-    availability: 'Mon–Fri, 7am–4pm',
-    image: require('./../../../assets/images/1789.jpg'),
-    coords: { latitude: 16.4023, longitude: 120.5960 },
-  },
-  {
-    name: 'Muslim Eats',
-    description: 'Authentic Muslim cuisine.',
-    availability: 'Working Hours',
-    image: require('./../../../assets/images/1789.jpg'),
-    coords: { latitude: 16.4030, longitude: 120.5980 },
-  },
-  {
-    name: 'Halal Bites 2',
-    description: 'Tasty meals for everyone.',
-    availability: 'Working Hours',
-    image: require('./../../../assets/images/1789.jpg'),
-    coords: { latitude: 16.4040, longitude: 120.6005 },
-  },
-  {
-    name: 'Muslim Eats 2',
-    description: 'Freshly made traditional dishes.',
-    availability: 'Working Hours',
-    image: require('./../../../assets/images/1789.jpg'),
-    coords: { latitude: 16.4055, longitude: 120.6022 },
-  },
-];
-
 export default function Restaurant() {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
+  
+  const restaurantData = [
+    {
+      name: 'Kashmir Biryani Cafe & Restaurant',
+      about: 'First ever restaurant in tahfckmscka',
+      representative: 'Mr. Tingquelita',
+      address: 'Abanao St, Baguio, 2600 Benguet',
+      availability: 'Mon–Fri, 7am–4pm',
+      availability: 'Open 5AM - 9PM',
+      number: '+63 912 755 3657',
+      email: 'info@kashmir.com',
+      socials: 'facebook.com',
+      image: require('./../../../assets/images/restaurant1.jpg'),
+      coords: { lat: 16.41, lon: 120.59 },
+    },
+    {
+      name: 'Ali House of Shawarma Halal',
+      about: 'First ever restaurant in tahfckmscka',
+      representative: 'Mr. Gantipulo',
+      address: '183 Upper Bonifacio St, Baguio, 2600 Benguet',
+      availability: 'Working Hours',
+      availability: 'Open 5AM - 9PM',
+      number: '+63 983 825 8637',
+      email: 'info@alihouse.com',
+      socials: 'facebook.com',
+      image: require('./../../../assets/images/restaurant2.webp'),
+      coords: { lat: 16.418, lon: 120.598 },
+    },
+    {
+      name: 'Ahmad Brothers Café',
+      about: 'First ever restaurant in tahfckmscka',
+      representative: 'Ms. Filisuella',
+      address: '#4, Purok 1, Brgy Happy Homes, Old Lucban, Magsaysay Ave, Baguio, Benguet',
+      availability: 'Working Hours',
+      availability: 'Open 5AM - 9PM',
+      number: '+63 983 825 8637',
+      email: 'info@ahmadbrothers.com',
+      socials: 'facebook.com',
+      image: require('./../../../assets/images/restaurant3.webp'),
+      coords: { lat: 16.41, lon: 120.59 },
+    },
+    {
+      name: 'Abonabil Restaurant',
+      about: 'First ever restaurant in tahfckmscka',
+      representative: 'Ms. Ganda',
+      address: '237 Upper Bonifacio St, Baguio, 2600 Benguet',
+      availability: 'Working Hours',
+      availability: 'Open 5AM - 9PM',
+      number: '+63 983 825 8637',
+      email: 'info@abonabil.com',
+      socials: 'facebook.com',
+      image: require('./../../../assets/images/restaurant4.webp'),
+      coords: { lat: 16.415, lon: 120.595 },
+    },
+  ];
 
   // ✅ Filter the list based on search
   const filteredRestaurant = restaurantData.filter((item) => {
@@ -64,7 +87,7 @@ export default function Restaurant() {
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.header_text}>Muslim Restaurant</Text>
-        <TouchableOpacity style={styles.backIcon} onPress={() => router.back()}>
+        <TouchableOpacity style={styles.backIcon} onPress={() => router.push('tabs/homepage/home')}>
           <Ionicons name="chevron-back" size={24} color={Colors.font2} />
         </TouchableOpacity>
       </View>
@@ -88,7 +111,7 @@ export default function Restaurant() {
             style={styles.card}
             onPress={() =>
               router.push({
-                pathname: 'tabs/homepage/restaurantdetails',
+                pathname: 'details/restaurant/restaurantdetails',
                 params: {
                   ...item,
                   image: Image.resolveAssetSource(item.image).uri,
@@ -100,50 +123,9 @@ export default function Restaurant() {
 
             <View style={styles.titleRow}>
               <Text style={styles.title}>{item.name}</Text>
-
-              {/* Button Group */}
-              <View style={styles.iconGroup}>
-                {/* Menu button */}
-                <TouchableOpacity
-                  style={styles.menuButton}
-                  onPress={() =>
-                    router.push({
-                      pathname: 'tabs/homepage/restaurantmenu',
-                      params: {
-                        name: item.name,
-                        description: item.description,
-                        image: Image.resolveAssetSource(item.image).uri,
-                      },
-                    })
-                  }
-                >
-                  <Ionicons name="fast-food" size={20} color={Colors.font2} />
-                  <Text style={styles.buttonText}>Menu</Text>
-                </TouchableOpacity>
-
-                {/* Navigate button */}
-                <TouchableOpacity
-                  style={styles.navigateButton}
-                  onPress={() =>
-                    router.push({
-                      pathname: '../../navestablishment/restaurantlocation',
-                      params: {
-                        name: item.name,
-                        latitude: item.coords.latitude,
-                        longitude: item.coords.longitude,
-                        description: item.description,
-                        image: Image.resolveAssetSource(item.image).uri,
-                      },
-                    })
-                  }
-                >
-                  <Ionicons name="location-sharp" size={20} color={Colors.font2} />
-                  <Text style={styles.buttonText}>Navigate</Text>
-                </TouchableOpacity>
-              </View>
             </View>
 
-            <Text style={styles.desc}>{item.description}</Text>
+            <Text style={styles.desc}>{item.address}</Text>
             <Text style={styles.hours}>{item.availability}</Text>
           </TouchableOpacity>
         ))}
@@ -153,8 +135,13 @@ export default function Restaurant() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.font2 },
-  header: { backgroundColor: Colors.primary },
+  container: {
+    flex: 1,
+    backgroundColor: Colors.font2,
+  },
+  header: {
+    backgroundColor: Colors.primary,
+  },
   header_text: {
     fontFamily: 'poppins-bold',
     textAlign: 'center',
@@ -162,7 +149,11 @@ const styles = StyleSheet.create({
     color: Colors.font2,
     padding: 13,
   },
-  backIcon: { position: 'absolute', left: 20, top: 18 },
+  backIcon: {
+    position: 'absolute',
+    left: 20,
+    top: 18,
+  },
   searchContainer: {
     flexDirection: 'row',
     backgroundColor: '#f1f1f1',
@@ -171,9 +162,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 15,
   },
-  searchInput: { flex: 1, height: 40 },
-  searchIcon: { marginLeft: 10 },
-  listContainer: { paddingHorizontal: 15, paddingBottom: 100 },
+  searchInput: {
+    flex: 1,
+    height: 40,
+  },
+  searchIcon: {
+    marginLeft: 10,
+  },
+  listContainer: {
+    paddingHorizontal: 15,
+    paddingBottom: 100,
+  },
   card: {
     backgroundColor: '#fff',
     marginBottom: 15,
@@ -182,33 +181,29 @@ const styles = StyleSheet.create({
     elevation: 3,
     padding: 10,
   },
-  image: { width: '100%', height: 190, borderRadius: 10 },
+  image: {
+    width: '100%',
+    height: 190,
+    borderRadius: 10,
+  },
   titleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-start', // 👈 keeps name aligned left
     marginTop: 10,
   },
-  title: { fontWeight: 'bold', fontSize: 16, flexShrink: 1 },
-  desc: { fontSize: 12, color: '#666', marginVertical: 5 },
-  hours: { fontSize: 12, color: '#666' },
-  iconGroup: { flexDirection: 'row', alignItems: 'center' },
-  menuButton: {
-    flexDirection: 'row',
-    backgroundColor: Colors.secondary,
-    borderRadius: 10,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    marginRight: 8,
-    alignItems: 'center',
+  title: {
+    fontWeight: 'bold',
+    fontSize: 16,
+    flexShrink: 1,
   },
-  navigateButton: {
-    flexDirection: 'row',
-    backgroundColor: Colors.secondary,
-    borderRadius: 10,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    alignItems: 'center',
+  desc: {
+    fontSize: 12,
+    color: '#666',
+    marginVertical: 5,
   },
-  buttonText: { color: Colors.font2, marginLeft: 4 },
+  hours: {
+    fontSize: 12,
+    color: '#666',
+  },
 });

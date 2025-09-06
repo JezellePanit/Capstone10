@@ -17,57 +17,31 @@ export default function Education() {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
 
-  // 👉 Geoapify API Key
-  const GEOAPIFY_API_KEY = 'ef7d5028843c49fd963b2dad2c3fd8d4';
-
-  // ✅ Get user's current location
-  const getUserLocation = async () => {
-    const { status } = await Location.requestForegroundPermissionsAsync();
-    if (status !== 'granted') {
-      alert('Permission to access location was denied');
-      return null;
-    }
-
-    const location = await Location.getCurrentPositionAsync({});
-    return {
-      lat: location.coords.latitude,
-      lon: location.coords.longitude,
-    };
-  };
-
-  // ✅ Fetch walking directions from Geoapify
-  const getDirections = async (from, to) => {
-    const url = `https://api.geoapify.com/v1/routing?waypoints=${from.lat},${from.lon}|${to.lat},${to.lon}&mode=walk&apiKey=${GEOAPIFY_API_KEY}`;
-    const res = await fetch(url);
-    const data = await res.json();
-    return data;
-  };
-
   // Dummy data (replace later with DB)
   const educationData = [
     {
-      name: 'Education 1',
-      description: 'WOW MAG AARAL KA?',
+      name: 'Almaarif Educational Center inc.',
+      about: 'First ever school in tahfckmscka',
+      representative: 'Mr. Enrique Gilas',
+      address: '7 Roman Ayson Rd, Baguio, 2600 Benguet',
       availability: 'Mon–Fri, 8am–5pm',
-      image: require('../../../assets/images/1789.jpg'),
+      number: '+63 963 628 6483',
+      email: 'info@education.com',
+      socials: 'facebook.com',
+      image: require('../../../assets/images/education1.webp'),
+      coords: { lat: 16.4156, lon: 120.58853 },
     },
     {
-      name: 'Education 2',
-      description: 'Dito ka na mag aral libre lang',
+      name: 'DISCOVER ISLAM',
+      about: 'First ever school in tahfckmscka',
+      representative: 'Mr. Gaduwino Galaw',
+      address: '1282 Zandueta St, Baguio, Benguet',
       availability: 'Mon–Sat, 9am–6pm',
-      image: require('../../../assets/images/1789.jpg'),
-    },
-    {
-      name: 'Education 3',
-      description: 'Owwnowww',
-      availability: 'Mon–Fri, 7am–4pm',
-      image: require('../../../assets/images/1789.jpg'),
-    },
-    {
-      name: 'Education 4',
-      description: 'Ay lagiii',
-      availability: 'Always Open',
-      image: require('../../../assets/images/1789.jpg'),
+      number: '+63 943 825 9267',
+      email: 'info@discoverislam.com',
+      socials: 'facebook.com',
+      image: require('../../../assets/images/education2.webp'),
+      coords: { lat: 16.3983, lon: 120.5844 },
     },
   ];
 
@@ -76,7 +50,7 @@ export default function Education() {
     const query = searchQuery.toLowerCase();
     return (
       item.name.toLowerCase().includes(query) ||
-      item.description.toLowerCase().includes(query) ||
+      item.address.toLowerCase().includes(query) ||
       item.availability.toLowerCase().includes(query)
     );
   });
@@ -86,7 +60,7 @@ export default function Education() {
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.header_text}>Education</Text>
-        <TouchableOpacity style={styles.backIcon} onPress={() => router.back()}>
+        <TouchableOpacity style={styles.backIcon} onPress={() => router.push('tabs/homepage/home')}>
           <Ionicons name="chevron-back" size={24} color={Colors.font2} />
         </TouchableOpacity>
       </View>
@@ -110,7 +84,7 @@ export default function Education() {
             style={styles.card}
             onPress={() =>
               router.push({
-                pathname: 'tabs/homepage/educationdetails',
+                pathname: 'details/education/educationdetails',
                 params: {
                   ...item,
                   image: Image.resolveAssetSource(item.image).uri,
@@ -122,56 +96,10 @@ export default function Education() {
 
             <View style={styles.titleRow}>
               <Text style={styles.title}>{item.name}</Text>
-
-              {/* Button Group */}
-              <View style={styles.iconGroup}>
-                {/* Locate Button */}
-                <TouchableOpacity
-                  style={{
-                    backgroundColor: Colors.secondary,
-                    width: 100,
-                    borderRadius: 10,
-                    padding: 3,
-                  }}
-                  onPress={async () => {
-                    console.log('Locate icon pressed');
-                    const userLocation = await getUserLocation();
-                    if (!userLocation) return;
-
-                    const mosqueLocation = {
-                      lat: 16.409044, // Example static location
-                      lon: 120.600258,
-                    };
-
-                    const directions = await getDirections(userLocation, mosqueLocation);
-                    console.log('Fetched directions:', directions);
-
-                    if (!directions || !directions.features || directions.features.length === 0) {
-                      alert('No directions found.');
-                      return;
-                    }
-
-                    // Navigate to map view and pass parameters
-                    router.push({
-                      pathname: '../../navestablishment/locatemosque',
-                      params: {
-                        from: JSON.stringify(userLocation),
-                        to: JSON.stringify(mosqueLocation),
-                        route: JSON.stringify(directions),
-                      },
-                    });
-                  }}
-                >
-                  <View style={{ flexDirection: 'row' }}>
-                    <Ionicons name="location-sharp" size={20} color={Colors.font2} />
-                    <Text style={{ color: Colors.font2 }}> Navigate </Text>
-                  </View>
-                </TouchableOpacity>
-              </View>
             </View>
 
             {/* Information */}
-            <Text style={styles.desc}>{item.description}</Text>
+            <Text style={styles.desc}>{item.address}</Text>
             <Text style={styles.hours}>{item.availability}</Text>
           </TouchableOpacity>
         ))}
@@ -251,9 +179,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     marginTop: 10,
-  },
-  iconGroup: {
-    flexDirection: 'row',
-    alignItems: 'center',
   },
 });
