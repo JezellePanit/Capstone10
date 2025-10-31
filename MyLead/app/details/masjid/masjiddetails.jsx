@@ -1,3 +1,7 @@
+//firebase
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '../../../firebase-config';
+
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import {
@@ -8,42 +12,102 @@ import {
   TouchableOpacity,
   View,
   Dimensions,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Swiper from 'react-native-swiper';
 import { Colors } from '../../../constants/Color';
+import { useEffect, useState } from 'react';
 
 const { width } = Dimensions.get('window');
 
 export default function MasjidDetails() {
   const router = useRouter();
-  const { name, about, imam, prayer, address, image, availability } = useLocalSearchParams();
+  const params = useLocalSearchParams();
+  const masjidId = params.id; // Firestore document ID
+  const [loading, setLoading] = useState(true);
+  const [masjid, setMasjid] = useState(null);
 
-  // Handle single/multiple image params
-  const imageArray = image ? image.split(',').map((img) => img.trim()) : [];
+  useEffect(() => {
+    if (!masjidId) return;
 
-  // Final image array
+    const fetchMasjid = async () => {
+      try {
+        const docRef = doc(db, 'listings_db', masjidId);
+        const docSnap = await getDoc(docRef);
+
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          setMasjid({
+            name: data.listing.listing_name,
+            about: data.listing.description,
+            imam: data.rep?.rep_name || 'Not specified',
+            address: data.listing.address,
+            image: data.listing.image,
+            availability: `${data.listing.opening} - ${data.listing.closing}`,
+            socialLinks: data.socialLinks || [],
+          });
+        } else {
+          console.warn('Masjid not found.');
+        }
+      } catch (error) {
+        console.error('Error fetching masjid details:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchMasjid();
+  }, [masjidId]);
+
+  if (loading) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" color={Colors.primary} />
+        <Text>Loading masjid details...</Text>
+      </View>
+    );
+  }
+
+  if (!masjid) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <Text style={{ textAlign: 'center', marginTop: 50 }}>No masjid found.</Text>
+      </SafeAreaView>
+    );
+  }
+
+  // Image array for Swiper
+  const imageArray = masjid.image ? [masjid.image] : [];
   const finalImages = [
     ...imageArray,
     require('./../../../assets/images/Masjid.jpg'),
     require('./../../../assets/images/Education.jpg'),
   ];
 
+  // 🟩 Dynamic max characters based on screen width
+  const getMaxChars = () => {
+    if (width < 360) return 15; // Small phones
+    if (width < 420) return 20; // Medium phones
+    return 25; // Larger phones or tablets
+  };
+
+  const maxChars = getMaxChars();
+  const shortTitle =
+    masjid.name.length > maxChars
+      ? `${masjid.name.substring(0, maxChars)}...`
+      : masjid.name;
+
   return (
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <Text
-          style={styles.headerTitle}
-          numberOfLines={1}
-          ellipsizeMode="tail"
+        <Text style={styles.headerTitle}>{shortTitle}</Text>
+
+        <TouchableOpacity
+          onPress={() => router.replace('tabs/homepage/masjid')}
+          style={styles.backBtn}
         >
-          {name
-            ? name.split(' ').slice(0, 2).join(' ') +
-              (name.split(' ').length > 2 ? '...' : '')
-            : ''}
-        </Text>
-        <TouchableOpacity onPress={() => router.push('tabs/homepage/masjid')} style={styles.backBtn}>
           <Ionicons name="chevron-back" size={24} color="#fff" />
         </TouchableOpacity>
       </View>
@@ -93,41 +157,28 @@ export default function MasjidDetails() {
 
         {/* Title */}
         <View style={styles.infoTitleContainer}>
-          <Text style={styles.infoTitleText}>{name}</Text>
+          <Text style={styles.infoTitleText}>{masjid.name}</Text>
         </View>
 
         {/* About */}
         <View style={styles.infoAssets}>
           <Text style={styles.sectionTitle}>About</Text>
-          <Text style={styles.value}>{about}</Text>
+          <Text style={styles.value}>{masjid.about}</Text>
         </View>
 
-        {/* Imam */}
-        <View style={styles.infoAssets}>
-          <Text style={styles.sectionTitle}>Imam</Text>
-          <Text style={styles.value}>{imam}</Text>
-        </View>
-
-        {/* Prayer */}
-        <View style={styles.infoAssets}>
-          <Text style={styles.sectionTitle}>Prayer Times</Text>
-          <Text style={styles.value}>{prayer}</Text>
-        </View>
-
-        {/* Location */}
+        {/* Address */}
         <View style={styles.infoAssets}>
           <Text style={styles.sectionTitle}>Address</Text>
-          <Text style={styles.value}>{address}</Text>
+          <Text style={styles.value}>{masjid.address}</Text>
         </View>
 
         {/* Availability */}
         <View style={styles.infoAssets}>
           <Text style={styles.sectionTitle}>Opening Hours</Text>
           <Text style={styles.value}>
-            {availability ? availability : 'No schedule provided'}
+            {masjid.availability || 'No schedule provided'}
           </Text>
         </View>
-
       </ScrollView>
     </SafeAreaView>
   );
@@ -174,6 +225,7 @@ const styles = StyleSheet.create({
   infoTitleText: {
     fontSize: 24,
     fontWeight: 'bold',
+    textAlign: 'center',
   },
   infoAssets: {
     backgroundColor: '#DBFCF0',

@@ -1,4 +1,3 @@
-// app/details/restaurant/_layout.jsx
 import { Ionicons, FontAwesome6, MaterialCommunityIcons } from '@expo/vector-icons';
 import { Tabs, useLocalSearchParams } from 'expo-router';
 import { Text, View } from 'react-native';

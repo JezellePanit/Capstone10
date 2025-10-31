@@ -1,70 +1,131 @@
-import { View, Text, StyleSheet, TouchableOpacity, Linking } from "react-native";
+//firebase
+import { doc, onSnapshot } from 'firebase/firestore';
+import { db } from '../../../firebase-config';
+
+import { View, Text, StyleSheet, TouchableOpacity, Linking, ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "../../../constants/Color";
 import { useRouter, useLocalSearchParams } from "expo-router";
+import { useEffect, useState } from "react";
 
 export default function Contact() {
   const router = useRouter();
-  const { number, email, socials } = useLocalSearchParams();
+  const params = useLocalSearchParams();
+  const listingId = params.id; // Firestore document ID
 
-  // Open external links
+  const [contact, setContact] = useState({
+    name: '',
+    phone: '',
+    email: '',
+    socialLinks: []
+  });
+
+  useEffect(() => {
+    if (!listingId) return;
+
+    const docRef = doc(db, 'listings_db', listingId);
+    const unsubscribe = onSnapshot(docRef, (snapshot) => {
+      if (snapshot.exists()) {
+        const data = snapshot.data();
+        console.log("Firestore education contact data:", data);
+
+        setContact({
+          name: data.rep?.rep_name || '',
+          phone: data.rep?.phone || '',
+          email: data.rep?.email || '',
+          socialLinks: data.rep?.socialLinks || []
+        });
+      }
+    });
+
+    return () => unsubscribe();
+  }, [listingId]);
+
   const handlePress = (url) => {
-    Linking.openURL(url).catch((err) =>
-      console.error("Failed to open URL:", err)
-    );
+    Linking.openURL(url).catch((err) => console.error("Failed to open URL:", err));
   };
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.header_text}>Contact Us</Text>
-        <TouchableOpacity
-          style={styles.backIcon}
-          onPress={() => router.push('tabs/homepage/education')}
-        >
-          <Ionicons name="chevron-back" size={24} color={Colors.font2} />
-        </TouchableOpacity>
-      </View>
+      <ScrollView contentContainerStyle={{ paddingBottom: 30 }}>
+        {/* Header */}
+        <View style={styles.header}>
+          <Text style={styles.header_text}>Contact Us</Text>
+          <TouchableOpacity
+            style={styles.backIcon}
+            onPress={() => router.replace('tabs/homepage/education')}
+          >
+            <Ionicons name="chevron-back" size={24} color={Colors.font2} />
+          </TouchableOpacity>
+        </View>
 
-      <Text style={styles.description}>
-        Feel free to reach out to us through the details below. 
-        We’d be happy to answer your questions or provide assistance.
-      </Text>
+        <Text style={styles.description}>
+          Feel free to reach out to us through the details below. 
+          We’d be happy to answer your questions or provide assistance.
+        </Text>
 
-      {/* Call */}
-      {number && (
-        <TouchableOpacity
-          style={styles.card}
-          onPress={() => handlePress(`tel:${number}`)}
-        >
-          <Ionicons name="call" size={20} color={Colors.primary} />
-          <Text style={styles.value}>{number}</Text>
-        </TouchableOpacity>
-      )}
+        {/* Organizer Name */}
+        {contact.name ? (
+          <View style={styles.card}>
+            <Ionicons name="person" size={20} color={Colors.primary} />
+            <Text style={styles.value}>{contact.name}</Text>
+          </View>
+        ) : null}
 
-      {/* Email */}
-      {email && (
-        <TouchableOpacity
-          style={styles.card}
-          onPress={() => handlePress(`mailto:${email}`)}
-        >
-          <Ionicons name="mail" size={20} color={Colors.primary} />
-          <Text style={styles.value}>{email}</Text>
-        </TouchableOpacity>
-      )}
+        {/* Phone */}
+        {contact.phone ? (
+          <TouchableOpacity
+            style={styles.card}
+            onPress={() => handlePress(`tel:${contact.phone}`)}
+          >
+            <Ionicons name="call" size={20} color={Colors.primary} />
+            <Text style={styles.value}>{contact.phone}</Text>
+          </TouchableOpacity>
+        ) : null}
 
-      {/* Socials */}
-      {socials && (
-        <TouchableOpacity
-          style={styles.card}
-          onPress={() => handlePress(socials)}
-        >
-          <Ionicons name="logo-facebook" size={20} color={Colors.primary} />
-          <Text style={styles.value}>{socials.replace("https://", "")}</Text>
-        </TouchableOpacity>
-      )}
+        {/* Email */}
+        {contact.email ? (
+          <TouchableOpacity
+            style={styles.card}
+            onPress={() => handlePress(`mailto:${contact.email}`)}
+          >
+            <Ionicons name="mail" size={20} color={Colors.primary} />
+            <Text style={styles.value}>{contact.email}</Text>
+          </TouchableOpacity>
+        ) : null}
+
+        {/* Social Links */}
+{contact.socialLinks.length > 0 && contact.socialLinks.map((link, index) => {
+  let url = '';
+  let icon = 'globe';
+
+  if (typeof link === 'string') {
+    url = link;
+  } else if (typeof link === 'object' && link?.url) {
+    url = link.url;
+    icon =
+      link.platform === 'facebook' ? 'logo-facebook' :
+      link.platform === 'instagram' ? 'logo-instagram' :
+      link.platform === 'twitter' ? 'logo-twitter' :
+      'globe';
+  } else {
+    return null; // skip invalid link
+  }
+
+  return (
+    <TouchableOpacity
+      key={index}
+      style={styles.card}
+      onPress={() => handlePress(url)}
+    >
+      <Ionicons name={icon} size={20} color={Colors.primary} />
+      <Text style={styles.value}>{url.replace("https://", "")}</Text>
+    </TouchableOpacity>
+  );
+})}
+
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -109,6 +170,7 @@ const styles = StyleSheet.create({
   },
   value: {
     marginLeft: 10,
+    marginRight: 10,
     fontSize: 14,
     color: "#444",
   },

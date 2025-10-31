@@ -1,3 +1,7 @@
+//firebase
+import { doc, onSnapshot } from 'firebase/firestore';
+import { db } from '../../../firebase-config';
+
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import {
@@ -8,42 +12,135 @@ import {
   TouchableOpacity,
   View,
   Dimensions,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Swiper from 'react-native-swiper';
 import { Colors } from '../../../constants/Color';
+import { useEffect, useState } from 'react';
 
 const { width } = Dimensions.get('window');
 
 export default function RestaurantDetails() {
   const router = useRouter();
-  const { name, about, representative, address, image, availability } = useLocalSearchParams();
+  const params = useLocalSearchParams();
+  const restaurantId = params.id; // Firestore document ID
 
-  // Handle single/multiple image params
-  const imageArray = image ? image.split(',').map((img) => img.trim()) : [];
+  const [restaurant, setRestaurant] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  // Final image array (you can remove defaults later if not needed)
+  useEffect(() => {
+    if (!restaurantId) return;
+
+    let unsubscribe;
+
+    const fetchRestaurant = async () => {
+      try {
+        const docRef = doc(db, 'listings_db', restaurantId);
+        unsubscribe = onSnapshot(
+          docRef,
+          (snapshot) => {
+            if (snapshot.exists()) {
+              const data = snapshot.data();
+              setRestaurant({
+                name: data.listing?.listing_name || 'N/A',
+                about: data.listing?.description || 'No description available.',
+                representative: data.rep?.rep_name || 'Not specified',
+                address: data.listing?.address || 'No address provided.',
+                image: data.listing?.image || '',
+                availability: `${data.listing?.opening || 'N/A'} - ${data.listing?.closing || 'N/A'}`,
+                menu: data.menu || [],
+                socialLinks: data.socialLinks || [],
+              });
+            } else {
+              setError('Restaurant data not found.');
+            }
+            setLoading(false);
+          },
+          (err) => {
+            console.error('❌ Firestore snapshot error:', err);
+            setError('Failed to fetch restaurant data. Please try again later.');
+            setLoading(false);
+          }
+        );
+      } catch (err) {
+        console.error('❌ Unexpected error fetching restaurant:', err);
+        setError('An unexpected error occurred while loading restaurant data.');
+        setLoading(false);
+      }
+    };
+
+    fetchRestaurant();
+
+    return () => {
+      if (unsubscribe) unsubscribe();
+    };
+  }, [restaurantId]);
+
+  // ✅ Loading state
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <ActivityIndicator size="large" color={Colors.primary} style={{ marginTop: 50 }} />
+      </SafeAreaView>
+    );
+  }
+
+  // ✅ Error state
+  if (error) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <Text style={{ textAlign: 'center', marginTop: 50, color: 'red' }}>{error}</Text>
+        <TouchableOpacity
+          style={{ alignSelf: 'center', marginTop: 15 }}
+          onPress={() => router.replace()}
+        >
+          <Text style={{ color: Colors.primary, fontWeight: 'bold' }}>Go Back</Text>
+        </TouchableOpacity>
+      </SafeAreaView>
+    );
+  }
+
+  if (!restaurant) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <Text style={{ textAlign: 'center', marginTop: 50 }}>Restaurant not found.</Text>
+      </SafeAreaView>
+    );
+  }
+
+  // Image array for Swiper
+  const imageArray = restaurant.image ? [restaurant.image] : [];
   const finalImages = [
     ...imageArray,
     require('./../../../assets/images/MuslimRestaurant.jpg'),
     require('./../../../assets/images/1789.jpg'),
   ];
 
+  // 🟩 Dynamic max characters based on screen width
+  const getMaxChars = () => {
+    if (width < 360) return 15; // Small phones
+    if (width < 420) return 20; // Medium phones
+    return 25; // Larger phones or tablets
+  };
+
+  const maxChars = getMaxChars();
+  const shortTitle =
+    restaurant.name.length > maxChars
+      ? `${restaurant.name.substring(0, maxChars)}...`
+      : restaurant.name;
+
   return (
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <Text
-          style={styles.headerTitle}
-          numberOfLines={1}
-          ellipsizeMode="tail"
+        <Text style={styles.headerTitle}>{shortTitle}</Text>
+
+        <TouchableOpacity
+          onPress={() => router.push('tabs/homepage/restaurant')}
+          style={styles.backBtn}
         >
-          {name
-            ? name.split(' ').slice(0, 2).join(' ') +
-              (name.split(' ').length > 2 ? '...' : '')
-            : ''}
-        </Text>
-        <TouchableOpacity onPress={() => router.push('tabs/homepage/restaurant')} style={styles.backBtn}>
           <Ionicons name="chevron-back" size={24} color="#fff" />
         </TouchableOpacity>
       </View>
@@ -93,31 +190,25 @@ export default function RestaurantDetails() {
 
         {/* Title */}
         <View style={styles.infoTitleContainer}>
-          <Text style={styles.infoTitleText}>{name}</Text>
+          <Text style={styles.infoTitleText}>{restaurant.name}</Text>
         </View>
 
         {/* About */}
         <View style={styles.infoAssets}>
           <Text style={styles.sectionTitle}>About</Text>
-          <Text style={styles.value}>{about}</Text>
-        </View>
-
-        {/* Representative */}
-        <View style={styles.infoAssets}>
-          <Text style={styles.sectionTitle}>Representative</Text>
-          <Text style={styles.value}>{representative ? representative : 'Not specified'}</Text>
+          <Text style={styles.value}>{restaurant.about}</Text>
         </View>
 
         {/* Address */}
         <View style={styles.infoAssets}>
           <Text style={styles.sectionTitle}>Address</Text>
-          <Text style={styles.value}>{address}</Text>
+          <Text style={styles.value}>{restaurant.address}</Text>
         </View>
 
         {/* Availability */}
         <View style={styles.infoAssets}>
           <Text style={styles.sectionTitle}>Opening Hours</Text>
-          <Text style={styles.value}>{availability ? availability : 'Not specified'}</Text>
+          <Text style={styles.value}>{restaurant.availability}</Text>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -165,6 +256,7 @@ const styles = StyleSheet.create({
   infoTitleText: {
     fontSize: 24,
     fontWeight: 'bold',
+    textAlign: 'center',
   },
   infoAssets: {
     backgroundColor: '#DBFCF0',

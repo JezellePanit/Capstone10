@@ -1,10 +1,13 @@
 import { MaterialIcons, Feather } from '@expo/vector-icons';
-import { Tabs, } from 'expo-router';
+import { Tabs, useLocalSearchParams, useRouter  } from 'expo-router';
 import { Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors } from '../../constants/Color';
 
 export default function TabLayout() {
+  const params = useLocalSearchParams();
+  const router = useRouter();
+
   return (
   <SafeAreaView style={{flex:1, backgroundColor: Colors.font2}} edges={['bottom']}>
     <Tabs screenOptions={{ headerShown: false, tabBarShowLabel: false,
@@ -28,6 +31,13 @@ export default function TabLayout() {
     {/* Home Tab */}
     <Tabs.Screen
       name="homepage"
+      initialParams={params}
+      listeners={{
+        tabPress: (e) => {
+          e.preventDefault(); // prevent default behavior
+          router.push("/tabs/homepage/home"); // ✅ force reset to home.jsx
+        },
+      }}
       options={{
         tabBarIcon: ({ focused }) => (
           <View style={{alignItems: 'center', width: 100}}>
@@ -41,6 +51,13 @@ export default function TabLayout() {
     {/* Locate */}
     <Tabs.Screen
       name="locationpage"
+      initialParams={params}
+      listeners={{
+        tabPress: (e) => {
+          e.preventDefault();
+          router.push("/tabs/locationpage/locate");
+        },
+      }}
       options={{
         tabBarIcon: ({ focused }) => (
           <View style={{alignItems: 'center', width: 100}}>
@@ -54,6 +71,13 @@ export default function TabLayout() {
     {/* Menu */}
     <Tabs.Screen
       name="menupage"
+      initialParams={params}
+      listeners={{
+        tabPress: (e) => {
+          e.preventDefault(); 
+          router.push("/tabs/menupage/menu"); 
+        },
+      }}
       options={{
         tabBarIcon: ({ focused }) => (
           <View style={{alignItems: 'center', width: 100}}>

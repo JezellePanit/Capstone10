@@ -1,3 +1,7 @@
+//firebase
+import { doc, onSnapshot } from 'firebase/firestore';
+import { db } from '../../../firebase-config';
+
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import {
@@ -8,50 +12,120 @@ import {
   TouchableOpacity,
   View,
   Dimensions,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Swiper from 'react-native-swiper';
 import { Colors } from '../../../constants/Color';
+import { useEffect, useState } from 'react';
 
 const { width } = Dimensions.get('window');
 
 export default function EducationDetails() {
   const router = useRouter();
-  const { name, about, representative, address, image, availability } = useLocalSearchParams();
+  const params = useLocalSearchParams();
+  const educationId = params.id; // Firestore document ID
 
-  // Convert `image` param (CSV or single string) into an array
-  const imageArray = image
-    ? image.split(',').map((img) => img.trim())
-    : [];
+  const [education, setEducation] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  // Final array = [dynamic images from params] + [default fallback images]
+  useEffect(() => {
+    if (!educationId) return;
+
+    try {
+      const docRef = doc(db, 'listings_db', educationId);
+      const unsubscribe = onSnapshot(
+        docRef,
+        (snapshot) => {
+          if (snapshot.exists()) {
+            const data = snapshot.data();
+            setEducation({
+              name: data.listing.listing_name,
+              about: data.listing.description,
+              representative: data.rep?.rep_name || 'Not specified',
+              address: data.listing.address,
+              image: data.listing.image,
+              availability: `${data.listing.opening} - ${data.listing.closing}`,
+              socialLinks: data.socialLinks || [],
+            });
+          } else {
+            console.warn('Education listing not found.');
+          }
+          setLoading(false);
+        },
+        (error) => {
+          console.error('Error fetching education details:', error);
+          setLoading(false);
+        }
+      );
+
+      return () => unsubscribe();
+    } catch (error) {
+      console.error('Unexpected error in useEffect:', error);
+      setLoading(false);
+    }
+  }, [educationId]);
+
+  if (loading) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" color={Colors.primary} />
+        <Text>Loading education details...</Text>
+      </View>
+    );
+  }
+
+  if (!education) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <Text style={{ textAlign: 'center', marginTop: 50 }}>No education data found.</Text>
+      </SafeAreaView>
+    );
+  }
+
+  // Image array for Swiper
+  const imageArray = education.image ? [education.image] : [];
   const finalImages = [
     ...imageArray,
     require('./../../../assets/images/Education.jpg'),
     require('./../../../assets/images/1789.jpg'),
   ];
 
+  // Truncate header to 2 words for education
+  const headerTitleShort = education?.name
+    ? education.name.split(' ').slice(0, 2).join(' ') +
+      (education.name.split(' ').length > 2 ? '...' : '')
+    : '';
+
+  // 🟩 Dynamic max characters based on screen width
+  const getMaxChars = () => {
+    if (width < 360) return 15; // Small phones
+    if (width < 420) return 20; // Medium phones
+    return 25; // Larger phones or tablets
+  };
+
+  const maxChars = getMaxChars();
+  const shortTitle =
+    education.name.length > maxChars
+      ? `${education.name.substring(0, maxChars)}...`
+      : education.name;
+
   return (
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-<Text 
-  style={styles.headerTitle} 
-  numberOfLines={1} 
-  ellipsizeMode="tail"
->
-  {name
-    ? name.split(' ').slice(0, 2).join(' ') + (name.split(' ').length > 2 ? '...' : '')
-    : ''}
-</Text>
-        <TouchableOpacity onPress={() => router.push('tabs/homepage/education')} style={styles.backBtn}>
+        <Text style={styles.headerTitle}>{shortTitle}</Text>
+
+        <TouchableOpacity
+          onPress={() => router.replace('tabs/homepage/education')}
+          style={styles.backBtn}
+        >
           <Ionicons name="chevron-back" size={24} color="#fff" />
         </TouchableOpacity>
-
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        {/* Education Image Carousel */}
+        {/* Image Carousel */}
         <View style={styles.profileContainer}>
           <Swiper
             style={styles.wrapper}
@@ -93,35 +167,30 @@ export default function EducationDetails() {
           </Swiper>
         </View>
 
-        {/* Info Section Title */}
+        {/* Title */}
         <View style={styles.infoTitleContainer}>
-          <Text style={styles.infoTitleText}>{name}</Text>
+          <Text style={styles.infoTitleText}>{education.name}</Text>
         </View>
 
-        {/* About Section */}
+        {/* About */}
         <View style={styles.infoAssets}>
           <Text style={styles.sectionTitle}>About</Text>
-          <Text style={styles.value}>{about}</Text>
+          <Text style={styles.value}>{education.about}</Text>
         </View>
 
-        <View style={styles.infoAssets}>
-          <Text style={styles.sectionTitle}>Representative</Text>
-          <Text style={styles.value}>{representative}</Text>
-        </View>
-
+        {/* Address */}
         <View style={styles.infoAssets}>
           <Text style={styles.sectionTitle}>Address</Text>
-          <Text style={styles.value}>{address}</Text>
+          <Text style={styles.value}>{education.address}</Text>
         </View>
 
-        {/* Hours Section */}
+        {/* Availability */}
         <View style={styles.infoAssets}>
           <Text style={styles.sectionTitle}>Opening Hours</Text>
           <Text style={styles.value}>
-            {availability ? availability : 'No schedule provided'}
+            {education.availability || 'No schedule provided'}
           </Text>
         </View>
-
       </ScrollView>
     </SafeAreaView>
   );
@@ -168,6 +237,7 @@ const styles = StyleSheet.create({
   infoTitleText: {
     fontSize: 24,
     fontWeight: 'bold',
+    textAlign: 'center',
   },
   infoAssets: {
     backgroundColor: '#DBFCF0',

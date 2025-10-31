@@ -5,8 +5,8 @@ export default function MenuLayout() {
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="menu" />
       <Stack.Screen name="about" />
-      <Stack.Screen name="chatscreen" />
-      <Stack.Screen name="comments" />
+      <Stack.Screen name="privacypolicy" />
+      <Stack.Screen name="report" />
     </Stack>
   );
 }

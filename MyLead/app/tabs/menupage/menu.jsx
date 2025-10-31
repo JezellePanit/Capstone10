@@ -13,35 +13,26 @@ export default function Menu() {
         <View>
           {/* Header */}
           <View style={styles.header}>
-            <Text style={styles.headerTitle}>More</Text>
-          </View>
-
-          {/* Account Section */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Account</Text>
-            <TouchableOpacity style={styles.option} onPress={() => router.push('../../auth/sign-in')}>
-              <Ionicons name="person-add-outline" size={20} color="#2eaf66" />
-              <Text style={styles.optionText}>Sign In</Text>
-            </TouchableOpacity>
+            <Text style={styles.headerTitle}>Menu</Text>
           </View>
 
           {/* General Section */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>General</Text>
 
+            <TouchableOpacity style={styles.option} onPress={() => router.push('tabs/menupage/report')}>
+              <Ionicons name="document-text-outline" size={20} color={Colors.primary} />
+              <Text style={styles.optionText}>Report</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.option} onPress={() => router.push('tabs/menupage/privacypolicy')}>
+              <Ionicons name="shield-checkmark-outline" size={20} color={Colors.primary} />
+              <Text style={styles.optionText}>Privacy Policy</Text>
+            </TouchableOpacity>
+
             <TouchableOpacity style={styles.option} onPress={() => router.push('tabs/menupage/about')}>
-              <Ionicons name="information-circle-outline" size={20} color="#2eaf66" />
+              <Ionicons name="information-circle-outline" size={20} color={Colors.primary} />
               <Text style={styles.optionText}>About</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.option} onPress={() => router.push('tabs/menupage/chatscreen')}>
-              <Ionicons name="headset-outline" size={20} color="#2eaf66" />
-              <Text style={styles.optionText}>Customer Support</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.option} onPress={() => router.push('tabs/menupage/comments')}>
-              <Ionicons name="chatbubble-ellipses-outline" size={20} color="#2eaf66" />
-              <Text style={styles.optionText}>Comments and Feedback</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -61,15 +52,13 @@ const styles = StyleSheet.create({
   },
   header: {
     backgroundColor: Colors.primary,
-    paddingTop: 25,
-    paddingBottom: 15,
-    paddingHorizontal: 20,
-    alignItems: 'center',
   },
   headerTitle: {
-    color: '#fff',
-    fontSize: 18,
-    fontFamily: 'poppins-bold',
+    fontFamily: "poppins-bold",
+    textAlign: "center",
+    fontSize: 22,
+    color: Colors.font2,
+    padding: 13,
   },
   section: {
     padding: 15,

@@ -1,235 +1,348 @@
-// details/education/educationlocation.jsx
-import React, { useEffect, useState, useRef } from "react";
-import {
-  View,
-  ActivityIndicator,
-  StyleSheet,
-  TouchableOpacity,
-  Text,
-  Alert,
-} from "react-native";
-import MapView, { Marker, Polyline, UrlTile, PROVIDER_DEFAULT } from "react-native-maps";
-import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
-import { Ionicons } from "@expo/vector-icons";
-import { useLocalSearchParams, useRouter } from "expo-router";
-import useLocation from "../../hooks/uselocation"; // same as restaurant
-import AsyncStorage from "@react-native-async-storage/async-storage";
+//firebase
+import { doc, onSnapshot } from "firebase/firestore";
+import { db } from "../../../firebase-config";
+
+import React, { useRef, useState, useEffect, useMemo, useCallback } from "react";
+import { Colors } from "../../../constants/Color";
+import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from "react-native";
+import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from "react-native-maps";
+import * as Location from "expo-location";
 import Constants from "expo-constants";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+import { Ionicons, Feather, MaterialIcons } from "@expo/vector-icons";
+import { FontAwesome5 } from "@expo/vector-icons";
+import { useRouter, useLocalSearchParams } from "expo-router";
+import polyline from "@mapbox/polyline";
 
-const { GEOAPIFY_API_KEY } = Constants.expoConfig.extra;
-const GEOAPIFY_STYLES = { bright: "osm-bright" };
-const POLYLINE_COLORS = { bright: "blue" };
-
-function getDistanceMeters(coord1, coord2) {
-  const toRad = (deg) => (deg * Math.PI) / 180;
-  const R = 6371e3;
-  const dLat = toRad(coord2.latitude - coord1.latitude);
-  const dLon = toRad(coord2.longitude - coord1.longitude);
-  const lat1 = toRad(coord1.latitude);
-  const lat2 = toRad(coord2.latitude);
-
-  const a =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos(lat1) * Math.cos(lat2) *
-    Math.sin(dLon / 2) ** 2;
-
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-}
+const GOOGLE_MAPS_API_KEY = Constants.expoConfig?.extra?.GOOGLE_MAPS_API_KEY || "";
 
 export default function EducationLocation() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { name, lat, lon } = useLocalSearchParams(); // ✅ gets coords from params
-  const { latitude, longitude, errorMsg } = useLocation();
-
-  const [routeCoords, setRouteCoords] = useState([]);
-  const [duration, setDuration] = useState(null);
-  const [distance, setDistance] = useState(null);
-  const [mode, setMode] = useState("drive");
-  const [mapStyle] = useState("bright");
-  const [loading, setLoading] = useState(true);
-
   const mapRef = useRef(null);
-  const routeCache = useRef({});
 
-  const educationCoords = {
-    latitude: parseFloat(lat),
-    longitude: parseFloat(lon),
+  const [loading, setLoading] = useState(false);
+  const [userLocation, setUserLocation] = useState(null);
+  const [mapType, setMapType] = useState("standard");
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [showRouteDropdown, setShowRouteDropdown] = useState(false);
+  const [mode, setMode] = useState("DRIVING");
+  const [routeType, setRouteType] = useState("shortest");
+  const [distance, setDistance] = useState(null);
+  const [duration, setDuration] = useState(null);
+  const [educationCoords, setEducationCoords] = useState(null);
+  const [educationName, setEducationName] = useState("");
+  const [routeCoordinates, setRouteCoordinates] = useState([]);
+
+  const { id } = useLocalSearchParams();
+
+  const DEFAULT_REGION = {
+    latitude: 16.4023,
+    longitude: 120.596,
+    latitudeDelta: 0.05,
+    longitudeDelta: 0.05,
   };
 
-  useEffect(() => {
-    if (!latitude || !longitude) return;
+  const transportModes = useMemo(
+    () => [
+      { key: "DRIVING", label: "Drive", icon: "drive-eta" },
+      { key: "WALKING", label: "Walk", icon: "directions-walk" },
+      { key: "MOTORCYCLE", label: "Motor", icon: "motorcycle" },
+      { key: "TRANSIT", label: "Transit", icon: "directions-transit" },
+    ],
+    []
+  );
 
+  const routeOptions = ["Shortest", "Longest"];
+
+  // Fetch Firestore document
+  useEffect(() => {
+    if (!id) return;
+    const docRef = doc(db, "listings_db", id);
+    const unsubscribe = onSnapshot(docRef, (snapshot) => {
+      if (snapshot.exists()) {
+        const data = snapshot.data();
+        const listing = data.listing || {};
+        setEducationName(listing.listing_name || "Education");
+
+        if (listing.coordinates) {
+          const lat = Number(listing.coordinates._lat);
+          const lng = Number(listing.coordinates._long);
+          if (!isNaN(lat) && !isNaN(lng)) {
+            setEducationCoords({ latitude: lat, longitude: lng });
+          }
+        }
+      }
+    });
+
+    return () => unsubscribe();
+  }, [id]);
+
+  // Get user location
+  useEffect(() => {
+    (async () => {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status === "granted") {
+        const location = await Location.getCurrentPositionAsync({});
+        setUserLocation({
+          latitude: location.coords.latitude,
+          longitude: location.coords.longitude,
+        });
+      }
+    })();
+  }, []);
+
+  // Animate map to marker
+  useEffect(() => {
+    if (educationCoords && mapRef.current) {
+      mapRef.current.animateToRegion(
+        {
+          latitude: educationCoords.latitude,
+          longitude: educationCoords.longitude,
+          latitudeDelta: 0.01,
+          longitudeDelta: 0.01,
+        },
+        1000
+      );
+    }
+  }, [educationCoords]);
+
+  // Decode polyline
+  const decodePolyline = useCallback(
+    (t) => polyline.decode(t).map(([lat, lng]) => ({ latitude: lat, longitude: lng })),
+    []
+  );
+
+  // Simplify polyline
+  const simplifyPolyline = useCallback((coords, factor = 5) => coords.filter((_, i) => i % factor === 0), []);
+
+  // Reset routeType to 'shortest' whenever mode changes
+  const handleModeChange = useCallback((newMode) => {
+    setMode(newMode);
+    setRouteType("shortest");
+  }, []);
+
+  // Fetch route
+  useEffect(() => {
     const fetchRoute = async () => {
+      if (!userLocation || !educationCoords) return;
       setLoading(true);
-      const url = `https://api.geoapify.com/v1/routing?waypoints=${latitude},${longitude}|${educationCoords.latitude},${educationCoords.longitude}&mode=${mode}&apiKey=${GEOAPIFY_API_KEY}`;
+
+      const origin = `${userLocation.latitude},${userLocation.longitude}`;
+      const destination = `${educationCoords.latitude},${educationCoords.longitude}`;
+      const travelMode = mode === "MOTORCYCLE" ? "driving" : mode.toLowerCase();
 
       try {
-        const res = await fetch(url);
-        const data = await res.json();
+        const url = `https://maps.googleapis.com/maps/api/directions/json?origin=${origin}&destination=${destination}&mode=${travelMode}&alternatives=true&key=${GOOGLE_MAPS_API_KEY}`;
+        const response = await fetch(url);
+        const data = await response.json();
 
-        if (!data.features || data.features.length === 0) {
-          Alert.alert("No route found", `No ${mode} route available.`);
-          setRouteCoords([]);
-          setLoading(false);
-          return;
+        if (data.routes && data.routes.length > 0) {
+          let selectedRoute = data.routes[0];
+
+          if (routeType === "shortest") {
+            selectedRoute = data.routes.reduce((prev, curr) =>
+              prev.legs[0].distance.value < curr.legs[0].distance.value ? prev : curr
+            );
+          } else if (routeType === "longest") {
+            selectedRoute = data.routes.reduce((prev, curr) =>
+              prev.legs[0].distance.value > curr.legs[0].distance.value ? prev : curr
+            );
+          }
+
+          const coords = simplifyPolyline(decodePolyline(selectedRoute.overview_polyline.points));
+          setRouteCoordinates(coords);
+          setDistance((selectedRoute.legs[0].distance.value / 1000).toFixed(1));
+          setDuration((selectedRoute.legs[0].duration.value / 60).toFixed(1));
+
+          mapRef.current?.fitToCoordinates(coords, {
+            edgePadding: { top: 100, right: 80, bottom: 180, left: 80 },
+            animated: true,
+          });
         }
-
-        const props = data.features[0].properties;
-        let coordsArray = data.features[0].geometry.coordinates;
-        if (Array.isArray(coordsArray[0][0])) coordsArray = coordsArray.flat();
-
-        const rawCoords = coordsArray
-          .filter((c) => Array.isArray(c) && c.length === 2)
-          .map((c) => ({ latitude: c[1], longitude: c[0] }));
-
-        const coords = rawCoords.filter((_, idx) => idx % 5 === 0);
-
-        setRouteCoords(coords);
-        setDuration(Math.round(props.time / 60));
-        setDistance((props.distance / 1000).toFixed(2));
-
-        if (mapRef.current && coords.length > 0) {
-          mapRef.current.fitToCoordinates(
-            [{ latitude, longitude }, educationCoords, ...coords],
-            { edgePadding: { top: 80, right: 80, bottom: 80, left: 80 }, animated: true }
-          );
-        }
-      } catch (error) {
-        console.error("Error fetching route:", error.message);
-        setRouteCoords([]);
+      } catch (err) {
+        console.warn("Directions API error:", err);
       } finally {
         setLoading(false);
       }
     };
 
     fetchRoute();
-  }, [mode, latitude, longitude, name]);
+  }, [mode, routeType, userLocation, educationCoords, decodePolyline, simplifyPolyline]);
 
-  if (errorMsg) return <Text>{errorMsg}</Text>;
-  if (!latitude || !longitude) return <ActivityIndicator size="large" style={{ flex: 1 }} />;
+  // Memoized Mode Button
+  const ModeButton = React.memo(({ keyMode, selectedMode, onPress, label, icon }) => (
+    <TouchableOpacity
+      key={`mode-${keyMode}`} // ✅ unique key
+      style={[styles.modeButton, selectedMode === keyMode && styles.selectedMode]}
+      onPress={onPress}
+    >
+      <View style={styles.modeContent}>
+        <MaterialIcons name={icon} size={20} color={selectedMode === keyMode ? "#fff" : "#333"} />
+        <Text style={[styles.modeText, selectedMode === keyMode && styles.selectedText]}>{label}</Text>
+      </View>
+    </TouchableOpacity>
+  ));
 
   return (
     <SafeAreaView style={styles.container}>
+      {/* Header */}
+      <View style={styles.header}>
+        <Text style={styles.header_text}>Location</Text>
+        <TouchableOpacity style={styles.backIcon} onPress={() => router.replace("tabs/homepage/education")}>
+          <Ionicons name="chevron-back" size={24} color={Colors.font2} />
+        </TouchableOpacity>
+      </View>
+
+      {/* Map */}
       <MapView
         ref={mapRef}
-        style={styles.map}
-        provider={PROVIDER_DEFAULT}
-        initialRegion={{
-          latitude: (latitude + educationCoords.latitude) / 2,
-          longitude: (longitude + educationCoords.longitude) / 2,
-          latitudeDelta: Math.abs(latitude - educationCoords.latitude) + 0.05,
-          longitudeDelta: Math.abs(longitude - educationCoords.longitude) + 0.05,
-        }}
+        style={{ flex: 1 }}
+        provider={PROVIDER_GOOGLE}
+        initialRegion={DEFAULT_REGION}
+        showsUserLocation={true}
+        mapType={mapType}
       >
-        <UrlTile
-          urlTemplate={`https://maps.geoapify.com/v1/tile/${GEOAPIFY_STYLES[mapStyle]}/{z}/{x}/{y}.png?apiKey=${GEOAPIFY_API_KEY}`}
-          maximumZ={20}
-          flipY={false}
-        />
-
-        <Marker coordinate={{ latitude, longitude }} title="You are here" />
-        <Marker coordinate={educationCoords} title={name || "Education"} pinColor="green" />
-
-        {routeCoords.length > 0 && (
-          <Polyline
-            coordinates={routeCoords}
-            strokeColor={POLYLINE_COLORS[mapStyle] || "blue"}
-            strokeWidth={4}
-          />
-        )}
+        {educationCoords && <Marker coordinate={educationCoords} title={educationName} pinColor="green" />}
+        {routeCoordinates.length > 0 && <Polyline coordinates={routeCoordinates} strokeColor="blue" strokeWidth={5} />}
       </MapView>
 
-      {/* Back Button */}
-      <TouchableOpacity
-        style={[styles.backButton, { top: insets.top + 10 }]}
-        onPress={() => router.back()}
-      >
-        <Ionicons name="arrow-back" size={24} color="white" />
-        <Text style={styles.backText}>Back</Text>
-      </TouchableOpacity>
-
-      {/* Info + Mode Buttons */}
-      <View style={styles.controls}>
-        <View style={styles.modeRow}>
-          {["drive", "walk", "bicycle"].map((m) => (
-            <TouchableOpacity
-              key={m}
-              style={[styles.button, mode === m && styles.selected]}
-              onPress={() => setMode(m)}
-            >
-              <Ionicons
-                name={m === "drive" ? "car" : m === "walk" ? "walk" : "bicycle"}
-                size={18}
-                color="#fff"
-              />
-              <Text style={styles.buttonText}>{m}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        {loading ? (
-          <ActivityIndicator color="#fff" style={{ marginTop: 10 }} />
-        ) : (
-          duration &&
-          distance && (
-            <Text style={styles.info}>
-              {distance} km • {duration} min
-            </Text>
-          )
+      {/* Map Tiles Dropdown */}
+      <View style={styles.layerContainer}>
+        <TouchableOpacity style={styles.layerButton} onPress={() => setShowDropdown(!showDropdown)}>
+          <Feather name="layers" size={24} color="black" />
+        </TouchableOpacity>
+        {showDropdown && (
+          <View style={styles.dropdown}>
+            {["standard", "hybrid", "terrain"].map((key) => (
+              <TouchableOpacity
+                key={`map-${key}`} // ✅ unique key
+                style={[styles.dropdownOption, mapType === key && styles.activeOption]}
+                onPress={() => {
+                  setMapType(key);
+                  setShowDropdown(false);
+                }}
+              >
+                <Text style={[styles.dropdownText, mapType === key && styles.activeText]}>
+                  {key.charAt(0).toUpperCase() + key.slice(1)}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
         )}
       </View>
+
+      {/* Route Type Dropdown */}
+      <View style={styles.routeDropdownWrapper}>
+        <TouchableOpacity style={styles.layerButton} onPress={() => setShowRouteDropdown(!showRouteDropdown)}>
+          <FontAwesome5 name="route" size={24} color="black" />
+        </TouchableOpacity>
+        {showRouteDropdown && (
+          <View style={styles.dropdown}>
+            {routeOptions.map((opt) => (
+              <TouchableOpacity
+                key={`route-${opt}`} // ✅ unique key
+                style={[styles.dropdownOption, routeType === opt.toLowerCase() && styles.activeOption]}
+                onPress={() => {
+                  setRouteType(opt.toLowerCase());
+                  setShowRouteDropdown(false);
+                }}
+              >
+                <Text style={[styles.dropdownText, routeType === opt.toLowerCase() && styles.activeText]}>{opt}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
+      </View>
+
+      {/* Transportation Modes */}
+      <View style={styles.transportContainer}>
+        {transportModes.map(({ key, label, icon }) => (
+  <ModeButton
+    key={`mode-${key}`}   // ✅ React key goes here
+    keyMode={key}
+    selectedMode={mode}
+    onPress={() => handleModeChange(key)}
+    label={label}
+    icon={icon}
+  />
+))}
+      </View>
+
+      {/* Distance & Duration */}
+      {distance && duration && (
+        <View style={styles.infoContainer}>
+          <Text style={styles.infoText}>Distance: {distance} km</Text>
+          <Text style={styles.infoText}>Duration: {duration} mins</Text>
+        </View>
+      )}
+
+      {/* Loading Spinner */}
+      {loading && <ActivityIndicator size="large" color="#2eaf66" style={styles.loading} />}
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  map: { flex: 1 },
-  backButton: {
-    position: "absolute",
-    left: 15,
+  header: {
+    backgroundColor: Colors.primary,
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "rgba(0,0,0,0.6)",
-    padding: 8,
-    borderRadius: 8,
+    justifyContent: "center",
+    paddingVertical: 10,
     zIndex: 10,
+    elevation: 5,
   },
-  backText: { color: "white", marginLeft: 5, fontSize: 16, fontWeight: "bold" },
-  controls: {
+  header_text: {
+    fontFamily: "poppins-bold",
+    fontSize: 22,
+    color: Colors.font2,
+    textAlign: "center",
+  },
+  backIcon: { position: "absolute", left: 15, top: 10 },
+  layerContainer: { position: "absolute", top: 155, right: 10, zIndex: 10 },
+  layerButton: { backgroundColor: "white", padding: 8, borderRadius: 0, elevation: 4 },
+  dropdown: { marginTop: 5, backgroundColor: "white", borderRadius: 0, padding: 0, elevation: 4 },
+  dropdownOption: { paddingVertical: 8, paddingHorizontal: 12 },
+  dropdownText: { fontSize: 14 },
+  activeOption: { backgroundColor: "#e0e0e0" },
+  activeText: { fontWeight: "bold", color: "#000" },
+  routeDropdownWrapper: { position: "absolute", top: 320, right: 10, zIndex: 10 },
+  transportContainer: {
     position: "absolute",
-    bottom: 20,
+    bottom: 150,
     left: 10,
     right: 10,
-    alignItems: "center",
-  },
-  modeRow: {
     flexDirection: "row",
-    marginBottom: 8,
-    backgroundColor: "rgba(0,0,0,0.5)",
-    borderRadius: 8,
+    justifyContent: "space-between",
+    zIndex: 10,
+    borderRadius: 10,
     padding: 5,
   },
-  button: {
-    flexDirection: "row",
+  modeButton: {
+    flex: 1,
+    marginHorizontal: 3,
+    paddingVertical: 10,
+    borderRadius: 8,
+    backgroundColor: "#e0e0e0",
     alignItems: "center",
-    padding: 6,
-    marginHorizontal: 4,
-    backgroundColor: "#666",
-    borderRadius: 6,
-    minWidth: 80,
-    justifyContent: "center",
   },
-  selected: { backgroundColor: "#2eaf66" },
-  buttonText: { color: "#fff", marginLeft: 4, fontSize: 12 },
-  info: {
-    color: "#fff",
-    backgroundColor: "rgba(0,0,0,0.6)",
-    paddingHorizontal: 10,
-    paddingVertical: 4,
+  selectedMode: { backgroundColor: "#2eaf66" },
+  modeContent: { flexDirection: "row", alignItems: "center", justifyContent: "center" },
+  modeText: { marginLeft: 5, color: "#333", fontWeight: "bold" },
+  selectedText: { color: "#fff" },
+  infoContainer: {
+    position: "absolute",
+    bottom: 110,
+    left: 10,
+    right: 10,
+    flexDirection: "row",
+    justifyContent: "space-around",
+    backgroundColor: "#e0e0e0",
+    padding: 8,
     borderRadius: 6,
-    fontSize: 14,
-    marginTop: 10,
   },
+  infoText: { color: "#000", fontWeight: "bold" },
+  loading: { position: "absolute", top: "50%", left: "50%", marginLeft: -15, marginTop: -15 },
 });
