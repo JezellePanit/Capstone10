@@ -11,6 +11,14 @@ export default ({ config }) => ({
   userInterfaceStyle: "automatic",
   newArchEnabled: true,
 
+  updates: {
+      url: "https://u.expo.dev/58a2603c-8e40-4346-aa28-079aa77008fa"
+    },
+
+  runtimeVersion: {
+      policy: "appVersion"
+    },
+    
   ios: {
     bundleIdentifier: "com.mylead.app",
     supportsTablet: true,
