@@ -3,7 +3,7 @@ import "dotenv/config";
 export default ({ config }) => ({
   ...config,
   name: "MyLead",
-  slug: "MyLead-v2",
+  slug: "myleadapplication",
   version: "1.0.0",
   orientation: "portrait",
   icon: "./assets/images/icon.png",
@@ -75,7 +75,7 @@ export default ({ config }) => ({
 
   extra: {
     eas: {
-      projectId: "58a2603c-8e40-4346-aa28-079aa77008fa",
+      projectId: "83a4a2c7-4d2e-4ad8-8aed-dad0b6954494",
     },
     googleMapsApiKey: process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY ?? "",
     expoPublicGoogleMapsApiKey:
