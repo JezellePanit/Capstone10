@@ -12,20 +12,23 @@ export default ({ config }) => ({
   newArchEnabled: true,
 
   updates: {
-      url: "https://u.expo.dev/58a2603c-8e40-4346-aa28-079aa77008fa"
-    },
+    url: "https://u.expo.dev/58a2603c-8e40-4346-aa28-079aa77008fa",
+  },
 
   runtimeVersion: {
-      policy: "appVersion"
-    },
-    
+    policy: "appVersion",
+  },
+
   ios: {
     bundleIdentifier: "com.mylead.app",
     supportsTablet: true,
     buildNumber: "1.0.0",
     config: {
-      googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY
-    }
+      googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY ?? "",
+    },
+    infoPlist: {
+      ITSAppUsesNonExemptEncryption: false,
+    },
   },
 
   android: {
@@ -33,24 +36,24 @@ export default ({ config }) => ({
     versionCode: 1,
     adaptiveIcon: {
       foregroundImage: "./assets/images/adaptive-icon.png",
-      backgroundColor: "#ffffff"
+      backgroundColor: "#ffffff",
     },
     permissions: [
       "ACCESS_FINE_LOCATION",
       "ACCESS_COARSE_LOCATION",
-      "INTERNET"
+      "INTERNET",
     ],
     config: {
       googleMaps: {
-        apiKey: process.env.GOOGLE_MAPS_API_KEY
-      }
-    }
+        apiKey: process.env.GOOGLE_MAPS_API_KEY ?? "",
+      },
+    },
   },
 
   web: {
     bundler: "metro",
     output: "static",
-    favicon: "./assets/images/favicon.png"
+    favicon: "./assets/images/favicon.png",
   },
 
   plugins: [
@@ -61,21 +64,22 @@ export default ({ config }) => ({
         image: "./assets/images/splash-icon.png",
         imageWidth: 200,
         resizeMode: "contain",
-        backgroundColor: "#ffffff"
-      }
-    ]
+        backgroundColor: "#ffffff",
+      },
+    ],
   ],
 
   experiments: {
-    typedRoutes: true
+    typedRoutes: true,
   },
 
   extra: {
     eas: {
-    projectId: "58a2603c-8e40-4346-aa28-079aa77008fa"
+      projectId: "58a2603c-8e40-4346-aa28-079aa77008fa",
+    },
+    googleMapsApiKey: process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY ?? "",
+    expoPublicGoogleMapsApiKey:
+      process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY ?? "",
+    releaseChannel: process.env.EAS_BUILD_PROFILE || "development",
   },
-    GOOGLE_MAPS_API_KEY: process.env.GOOGLE_MAPS_API_KEY,
-    EXPO_PUBLIC_GOOGLE_MAPS_API_KEY: process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY,
-    releaseChannel: process.env.EAS_BUILD_PROFILE || "development"
-  }
 });
